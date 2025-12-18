@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
+import AppFooter from '@/components/AppFooter';
 import { settingsAPI } from '@/lib/api';
 import { getToken, removeToken, isAuthenticated } from '@/lib/auth';
 import { Loader2, Save, Timer, Hash } from 'lucide-react';
@@ -74,12 +75,13 @@ export default function AdminSettingsPage() {
     <div className="flex min-h-screen">
       <Sidebar isAdmin onLogout={handleLogout} />
       
-      <main className="flex-1 p-8">
-        <div className="max-w-2xl mx-auto">
-          <header className="mb-8">
-            <h1 className="text-3xl font-bold gradient-text">Settings</h1>
-            <p className="text-nihongo-text-muted">Configure game settings</p>
-          </header>
+      <div className="flex-1 flex flex-col">
+        <main className="flex-1 p-8">
+          <div className="max-w-2xl mx-auto">
+            <header className="mb-8">
+              <h1 className="text-3xl font-bold gradient-text">Settings</h1>
+              <p className="text-nihongo-text-muted">Configure game settings</p>
+            </header>
 
           {/* Salad Settings */}
           <div className="card mb-6">
@@ -167,6 +169,8 @@ export default function AdminSettingsPage() {
           </button>
         </div>
       </main>
+      <AppFooter />
+      </div>
     </div>
   );
 }

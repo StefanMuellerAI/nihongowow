@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
+import AppFooter from '@/components/AppFooter';
 import { adminAPI, Invitation } from '@/lib/api';
 import { getToken, removeToken } from '@/lib/auth';
 import { 
@@ -140,15 +141,16 @@ export default function AdminInvitationsPage() {
     <div className="flex min-h-screen">
       <Sidebar isAdmin onLogout={handleLogout} />
       
-      <main className="flex-1 p-8">
-        <div className="max-w-6xl mx-auto">
-          <header className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <UserPlus className="w-8 h-8 text-nihongo-primary" />
-              <h1 className="text-3xl font-bold gradient-text">Invitations</h1>
-            </div>
-            <p className="text-nihongo-text-muted">Invite new users to join NihongoWOW</p>
-          </header>
+      <div className="flex-1 flex flex-col">
+        <main className="flex-1 p-8">
+          <div className="max-w-6xl mx-auto">
+            <header className="mb-8">
+              <div className="flex items-center gap-3 mb-2">
+                <UserPlus className="w-8 h-8 text-nihongo-primary" />
+                <h1 className="text-3xl font-bold gradient-text">Invitations</h1>
+              </div>
+              <p className="text-nihongo-text-muted">Invite new users to join NihongoWOW</p>
+            </header>
 
           {/* Send Invitation Form */}
           <div className="card mb-8">
@@ -347,6 +349,8 @@ export default function AdminInvitationsPage() {
           </div>
         </div>
       </main>
+      <AppFooter />
+      </div>
     </div>
   );
 }

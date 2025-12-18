@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { authAPI } from '@/lib/api';
+import AppFooter from '@/components/AppFooter';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -57,12 +58,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12 sakura-pattern">
-      {/* Decorative elements */}
-      <div className="absolute top-20 left-10 text-6xl opacity-20">桜</div>
-      <div className="absolute bottom-20 right-20 text-4xl opacity-15">ログイン</div>
-      
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex flex-col sakura-pattern">
+      <div className="flex-1 flex items-center justify-center px-6 py-12">
+        {/* Decorative elements */}
+        <div className="absolute top-20 left-10 text-6xl opacity-20">桜</div>
+        <div className="absolute bottom-20 right-20 text-4xl opacity-15">ログイン</div>
+        
+        <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3">
@@ -177,6 +179,8 @@ export default function LoginPage() {
           </Link>
         </p>
       </div>
+      </div>
+      <AppFooter />
     </div>
   );
 }

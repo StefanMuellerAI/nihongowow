@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
+import AppFooter from '@/components/AppFooter';
 import { adminAPI, HintCacheItem, TTSCacheItem, CacheStats } from '@/lib/api';
 import { getToken, removeToken } from '@/lib/auth';
 import { 
@@ -197,12 +198,13 @@ export default function AdminCachePage() {
     <div className="flex min-h-screen">
       <Sidebar isAdmin onLogout={handleLogout} />
       
-      <main className="flex-1 p-8">
-        <div className="max-w-6xl mx-auto">
-          <header className="mb-8">
-            <h1 className="text-3xl font-bold gradient-text">AI Cache</h1>
-            <p className="text-nihongo-text-muted">Manage cached hints and TTS audio</p>
-          </header>
+      <div className="flex-1 flex flex-col">
+        <main className="flex-1 p-8">
+          <div className="max-w-6xl mx-auto">
+            <header className="mb-8">
+              <h1 className="text-3xl font-bold gradient-text">AI Cache</h1>
+              <p className="text-nihongo-text-muted">Manage cached hints and TTS audio</p>
+            </header>
 
           {/* Stats */}
           {stats && (
@@ -426,6 +428,10 @@ export default function AdminCachePage() {
               )}
             </div>
           )}
+        </div>
+      </main>
+      <AppFooter />
+      </div>
 
           {/* Confirm Clear Modal */}
           {confirmClear && (
@@ -464,8 +470,6 @@ export default function AdminCachePage() {
               </div>
             </div>
           )}
-        </div>
-      </main>
     </div>
   );
 }

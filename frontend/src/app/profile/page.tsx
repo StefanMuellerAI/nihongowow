@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { authAPI, scoresAPI, TodayScores } from '@/lib/api';
 import { getToken, removeToken } from '@/lib/auth';
+import AppFooter from '@/components/AppFooter';
 
 interface UserInfo {
   id: string;
@@ -123,8 +124,9 @@ export default function ProfilePage() {
     <div className="flex min-h-screen">
       <Sidebar />
       
-      <main className="flex-1 p-8">
-        <div className="max-w-4xl mx-auto">
+      <div className="flex-1 flex flex-col">
+        <main className="flex-1 p-8">
+          <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -277,6 +279,8 @@ export default function ProfilePage() {
           </div>
         </div>
       </main>
+      <AppFooter />
+      </div>
     </div>
   );
 }

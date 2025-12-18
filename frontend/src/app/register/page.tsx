@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, User, ArrowRight, Loader2, AlertCircle, CheckCircle, RefreshCw, Clock, Gift } from 'lucide-react';
 import { authAPI } from '@/lib/api';
+import AppFooter from '@/components/AppFooter';
 
 const RESEND_COOLDOWN_SECONDS = 120; // 2 minutes
 
@@ -125,11 +126,12 @@ function RegisterForm() {
   // Success state after registration
   if (registrationSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-6 py-12 sakura-pattern">
-        <div className="absolute top-20 right-10 text-6xl opacity-20">桜</div>
-        <div className="absolute bottom-20 left-20 text-4xl opacity-15">確認</div>
-        
-        <div className="w-full max-w-md">
+      <div className="min-h-screen flex flex-col sakura-pattern">
+        <div className="flex-1 flex items-center justify-center px-6 py-12">
+          <div className="absolute top-20 right-10 text-6xl opacity-20">桜</div>
+          <div className="absolute bottom-20 left-20 text-4xl opacity-15">確認</div>
+          
+          <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <Link href="/" className="inline-flex items-center gap-3">
               <span className="text-4xl">🌸</span>
@@ -216,17 +218,20 @@ function RegisterForm() {
             </Link>
           </p>
         </div>
+        </div>
+        <AppFooter />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12 sakura-pattern">
-      {/* Decorative elements */}
-      <div className="absolute top-20 right-10 text-6xl opacity-20">桜</div>
-      <div className="absolute bottom-20 left-20 text-4xl opacity-15">登録</div>
-      
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex flex-col sakura-pattern">
+      <div className="flex-1 flex items-center justify-center px-6 py-12">
+        {/* Decorative elements */}
+        <div className="absolute top-20 right-10 text-6xl opacity-20">桜</div>
+        <div className="absolute bottom-20 left-20 text-4xl opacity-15">登録</div>
+        
+        <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3">
@@ -417,6 +422,8 @@ function RegisterForm() {
           </Link>
         </p>
       </div>
+      </div>
+      <AppFooter />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
+import AppFooter from '@/components/AppFooter';
 import { adminAPI, AdminUser } from '@/lib/api';
 import { getToken, removeToken } from '@/lib/auth';
 import { 
@@ -104,8 +105,9 @@ export default function AdminUsersPage() {
     <div className="flex min-h-screen">
       <Sidebar isAdmin onLogout={handleLogout} />
       
-      <main className="flex-1 p-8">
-        <div className="max-w-6xl mx-auto">
+      <div className="flex-1 flex flex-col">
+        <main className="flex-1 p-8">
+          <div className="max-w-6xl mx-auto">
           <header className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <Users className="w-8 h-8 text-nihongo-primary" />
@@ -304,6 +306,8 @@ export default function AdminUsersPage() {
           </div>
         </div>
       </main>
+      <AppFooter />
+      </div>
 
       {/* Delete Confirmation Modal for dangerous operations */}
       {deleteConfirm && (
