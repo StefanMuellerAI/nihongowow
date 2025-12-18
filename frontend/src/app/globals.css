@@ -1,0 +1,145 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #0a0a0a;
+  --color-bg-light: #141414;
+  --color-primary: #f472b6;
+  --color-primary-dark: #db2777;
+  --color-secondary: #fce7f3;
+  --color-accent: #dc2626;
+  --color-text: #f5f5f4;
+  --color-text-muted: #a8a29e;
+  --color-border: #292524;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+}
+
+/* Japanese text styling */
+.japanese-text {
+  font-family: 'Noto Sans JP', sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Focus styles */
+input:focus,
+button:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: var(--color-primary);
+}
+
+/* Button base styles */
+.btn {
+  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2;
+}
+
+.btn-primary {
+  @apply bg-nihongo-primary text-nihongo-bg hover:bg-nihongo-primary-dark;
+}
+
+.btn-secondary {
+  @apply bg-nihongo-bg-light text-nihongo-text border border-nihongo-border hover:border-nihongo-primary;
+}
+
+.btn-danger {
+  @apply bg-red-600 text-white hover:bg-red-700;
+}
+
+/* Input base styles */
+.input {
+  @apply w-full pl-4 pr-4 py-3 bg-nihongo-bg-light border border-nihongo-border rounded-lg text-nihongo-text placeholder-nihongo-text-muted focus:border-nihongo-primary focus:ring-2 focus:ring-nihongo-primary/20 transition-all duration-200;
+}
+
+/* Input with icon - use this class when you have an icon on the left */
+.input-with-icon {
+  @apply w-full pl-12 pr-4 py-3 bg-nihongo-bg-light border border-nihongo-border rounded-lg text-nihongo-text placeholder-nihongo-text-muted focus:border-nihongo-primary focus:ring-2 focus:ring-nihongo-primary/20 transition-all duration-200;
+}
+
+/* Card styles */
+.card {
+  @apply bg-nihongo-bg-light border border-nihongo-border rounded-xl p-6;
+}
+
+/* Decorative elements */
+.sakura-pattern {
+  background-image: radial-gradient(circle at 20% 80%, rgba(244, 114, 182, 0.05) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 20%, rgba(244, 114, 182, 0.03) 0%, transparent 50%),
+                    radial-gradient(circle at 40% 40%, rgba(252, 231, 243, 0.02) 0%, transparent 30%);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Tooltip fade-in animation (for elements with left: 50% positioning) */
+.animate-fade-in-tooltip {
+  animation: fadeInTooltip 0.2s ease-out;
+}
+
+@keyframes fadeInTooltip {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* General fade-in animation (for normally positioned elements) */
+.animate-fade-in {
+  animation: fadeInSimple 0.2s ease-out;
+}
+
+@keyframes fadeInSimple {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
