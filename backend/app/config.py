@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     # CORS Settings
     cors_origins: str = "http://localhost:3000"
     
+    # Frontend URL for email links
+    frontend_url: str = "http://localhost:3000"
+    
     # OpenAI Settings (optional)
     openai_api_key: str = ""
     

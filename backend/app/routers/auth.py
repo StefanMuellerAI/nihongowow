@@ -121,7 +121,7 @@ async def register(
     db.commit()
     
     # Send verification email in background
-    background_tasks.add_task(send_verification_email, new_user.email, token, new_user.username)
+    background_tasks.add_task(send_verification_email, new_user.email, token, new_user.username, settings.frontend_url)
     
     # Audit log the registration
     log_registration(new_user.email, request)
@@ -428,7 +428,7 @@ async def resend_verification(
     db.commit()
     
     # Send verification email in background
-    background_tasks.add_task(send_verification_email, user.email, token, user.username)
+    background_tasks.add_task(send_verification_email, user.email, token, user.username, settings.frontend_url)
     
     return ResendVerificationResponse(
         success=True,

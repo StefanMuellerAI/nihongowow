@@ -15,12 +15,14 @@ from app.schemas import (
     TTSCacheResponse, TTSCacheListResponse, CacheStatsResponse
 )
 from app.auth import require_admin
+from app.config import get_settings
 from app.email_service import (
     generate_invitation_token, get_invitation_token_expiry, send_invitation_email,
     generate_verification_token, get_verification_token_expiry, send_verification_email
 )
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
+settings = get_settings()
 logger = logging.getLogger(__name__)
 
 
@@ -71,8 +73,8 @@ async def create_invitation(
     db.refresh(invitation)
     
     # Send invitation email in background
-    background_tasks.add_task(send_invitation_email, email, token, admin.username)
-    
+    background_tasks.add_task(send_invitation_email, email, token, admin.username, settings.frontend_url)
+
     logger.info(f"Admin {admin.username} created invitation for {email}")
     
     return InvitationResponse(
@@ -167,8 +169,8 @@ async def resend_invitation(
     db.refresh(invitation)
     
     # Send new invitation email
-    background_tasks.add_task(send_invitation_email, invitation.email, invitation.token, admin.username)
-    
+    background_tasks.add_task(send_invitation_email, invitation.email, invitation.token, admin.username, settings.frontend_url)
+
     logger.info(f"Admin {admin.username} resent invitation to {invitation.email}")
     
     return InvitationResponse(
@@ -277,8 +279,8 @@ async def resend_user_verification(
     db.commit()
     
     # Send verification email in background
-    background_tasks.add_task(send_verification_email, user.email, token, user.username)
-    
+    background_tasks.add_task(send_verification_email, user.email, token, user.username, settings.frontend_url)
+
     logger.info(f"Admin {admin.username} resent verification email to {user.email}")
     
     return UserAdminResponse(
