@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { vocabularyAPI, scoresAPI, userPreferencesAPI, Vocabulary } from '@/lib/api';
 import { isAuthenticated } from '@/lib/auth';
 import { RotateCcw, Loader2, Trophy, Play, Layers } from 'lucide-react';
@@ -27,6 +27,61 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
+// Memoized Memory Card Component - prevents re-renders of unchanged cards
+interface MemoryCardProps {
+  card: MemoryCard;
+  onCardClick: (cardId: string) => void;
+}
+
+const MemoryCardComponent = memo(function MemoryCardComponent({ card, onCardClick }: MemoryCardProps) {
+  const handleClick = useCallback(() => {
+    onCardClick(card.id);
+  }, [card.id, onCardClick]);
+
+  return (
+    <div
+      onClick={handleClick}
+      className={`
+        w-24 h-32 rounded-xl cursor-pointer transition-all duration-300 transform
+        ${card.isMatched 
+          ? 'opacity-0 pointer-events-none scale-95' 
+          : 'hover:scale-105'
+        }
+        ${card.isFlipped || card.isMatched
+          ? card.isMatched
+            ? 'border-2 border-green-500'
+            : card.type === 'japanese'
+              ? 'bg-nihongo-primary/20 border-2 border-nihongo-primary'
+              : 'bg-pink-500/20 border-2 border-pink-500'
+          : 'bg-nihongo-bg-light border-2 border-nihongo-border hover:border-nihongo-primary/50'
+        }
+        flex items-center justify-center p-2 select-none
+      `}
+      style={{
+        perspective: '1000px',
+      }}
+    >
+      {card.isFlipped || card.isMatched ? (
+        <div className={`text-center ${card.type === 'japanese' ? 'japanese-text' : ''}`}>
+          <span className={`text-sm font-medium ${
+            card.type === 'japanese' ? 'text-nihongo-primary' : 'text-pink-500'
+          }`}>
+            {card.content}
+          </span>
+        </div>
+      ) : (
+        <div className={`text-4xl font-bold ${
+          card.type === 'japanese' 
+            ? 'japanese-text text-nihongo-primary/50' 
+            : 'text-pink-500/50'
+        }`}>
+          {card.type === 'japanese' ? '日' : 'E'}
+        </div>
+      )}
+    </div>
+  );
+});
+
 export default function MemoryGame() {
   const [gameState, setGameState] = useState<GameState>('loading');
   const [cards, setCards] = useState<MemoryCard[]>([]);
@@ -38,6 +93,8 @@ export default function MemoryGame() {
   const [isChecking, setIsChecking] = useState(false);
   const successSound = useSuccessSound();
   const checkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const cardsRef = useRef<MemoryCard[]>([]);
+  const isProcessingRef = useRef(false);
 
   // Load user preferences on mount
   useEffect(() => {
@@ -60,6 +117,11 @@ export default function MemoryGame() {
     loadPreferences();
   }, []);
 
+  // Keep cardsRef in sync with cards state
+  useEffect(() => {
+    cardsRef.current = cards;
+  }, [cards]);
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -76,6 +138,7 @@ export default function MemoryGame() {
     setMatchedPairs(0);
     setMoves(0);
     setIsChecking(false);
+    isProcessingRef.current = false;
 
     if (checkTimeoutRef.current) {
       clearTimeout(checkTimeoutRef.current);
@@ -143,48 +206,62 @@ export default function MemoryGame() {
     loadVocabulary();
   };
 
-  const handleCardClick = (cardId: string) => {
+  // Memoized card click handler to prevent child re-renders
+  const handleCardClick = useCallback((cardId: string) => {
     if (gameState !== 'playing' || isChecking) return;
 
-    const card = cards.find(c => c.id === cardId);
-    if (!card || card.isFlipped || card.isMatched) return;
+    setCards(prevCards => {
+      const card = prevCards.find(c => c.id === cardId);
+      if (!card || card.isFlipped || card.isMatched) return prevCards;
 
-    // Can't flip more than 2 cards
-    if (flippedCards.length >= 2) return;
+      // Check current flipped count from the cards state
+      const currentFlippedCount = prevCards.filter(c => c.isFlipped && !c.isMatched).length;
+      if (currentFlippedCount >= 2) return prevCards;
 
-    // Flip the card
-    setCards(prev => prev.map(c =>
-      c.id === cardId ? { ...c, isFlipped: true } : c
-    ));
+      // Flip the card
+      return prevCards.map(c =>
+        c.id === cardId ? { ...c, isFlipped: true } : c
+      );
+    });
 
-    const newFlippedCards = [...flippedCards, cardId];
-    setFlippedCards(newFlippedCards);
+    setFlippedCards(prev => {
+      if (prev.length >= 2) return prev;
+      return [...prev, cardId];
+    });
+  }, [gameState, isChecking]);
 
-    // Check for match when 2 cards are flipped
-    if (newFlippedCards.length === 2) {
-      setMoves(prev => prev + 1);
-      setIsChecking(true);
+  // Check for matches when flippedCards changes
+  useEffect(() => {
+    if (flippedCards.length !== 2) return;
+    
+    // Prevent re-processing with synchronous ref check
+    if (isProcessingRef.current) return;
+    
+    // Set ref SYNCHRONOUSLY before any state updates
+    isProcessingRef.current = true;
 
-      const [firstId, secondId] = newFlippedCards;
-      const firstCard = cards.find(c => c.id === firstId);
-      const secondCard = cards.find(c => c.id === secondId);
+    setMoves(prev => prev + 1);
+    setIsChecking(true);
 
-      if (firstCard && secondCard) {
-        // Check if they form a matching pair (same vocabId, different types)
-        if (firstCard.vocabId === secondCard.vocabId && firstCard.type !== secondCard.type) {
-          // Match found!
-          successSound.play();
+    const [firstId, secondId] = flippedCards;
+    const currentCards = cardsRef.current;
+    const firstCard = currentCards.find(c => c.id === firstId);
+    const secondCard = currentCards.find(c => c.id === secondId);
 
-          checkTimeoutRef.current = setTimeout(() => {
-            setCards(prev => prev.map(c =>
-              c.vocabId === firstCard.vocabId ? { ...c, isMatched: true } : c
-            ));
+    if (firstCard && secondCard) {
+      // Check if they form a matching pair (same vocabId, different types)
+      if (firstCard.vocabId === secondCard.vocabId && firstCard.type !== secondCard.type) {
+        // Match found!
+        successSound.play();
 
-            const newMatchedPairs = matchedPairs + 1;
-            setMatchedPairs(newMatchedPairs);
-            setFlippedCards([]);
-            setIsChecking(false);
+        checkTimeoutRef.current = setTimeout(() => {
+          setCards(prev => prev.map(c =>
+            c.vocabId === firstCard.vocabId ? { ...c, isMatched: true } : c
+          ));
 
+          setMatchedPairs(prev => {
+            const newMatchedPairs = prev + 1;
+            
             // Check if game is finished
             if (newMatchedPairs === 15) {
               setGameState('finished');
@@ -196,20 +273,30 @@ export default function MemoryGame() {
                 });
               }
             }
-          }, 500);
-        } else {
-          // No match - flip cards back after delay
-          checkTimeoutRef.current = setTimeout(() => {
-            setCards(prev => prev.map(c =>
-              newFlippedCards.includes(c.id) ? { ...c, isFlipped: false } : c
-            ));
-            setFlippedCards([]);
-            setIsChecking(false);
-          }, 1000);
-        }
+            
+            return newMatchedPairs;
+          });
+          
+          setFlippedCards([]);
+          setIsChecking(false);
+          isProcessingRef.current = false;
+        }, 500);
+      } else {
+        // No match - flip cards back after delay
+        checkTimeoutRef.current = setTimeout(() => {
+          setCards(prev => prev.map(c =>
+            flippedCards.includes(c.id) ? { ...c, isFlipped: false } : c
+          ));
+          setFlippedCards([]);
+          setIsChecking(false);
+          isProcessingRef.current = false;
+        }, 1000);
       }
+    } else {
+      // Cards not found - reset processing state
+      isProcessingRef.current = false;
     }
-  };
+  }, [flippedCards, successSound]);
 
   if (gameState === 'loading') {
     return (
@@ -278,43 +365,11 @@ export default function MemoryGame() {
         <div className="flex-1 flex items-center justify-center">
           <div className="grid grid-cols-6 gap-3">
             {cards.map(card => (
-              <div
+              <MemoryCardComponent
                 key={card.id}
-                onClick={() => handleCardClick(card.id)}
-                className={`
-                  w-24 h-32 rounded-xl cursor-pointer transition-all duration-300 transform
-                  ${card.isMatched 
-                    ? 'opacity-0 pointer-events-none scale-95' 
-                    : 'hover:scale-105'
-                  }
-                  ${card.isFlipped || card.isMatched
-                    ? card.isMatched
-                      ? 'border-2 border-green-500'
-                      : card.type === 'japanese'
-                        ? 'bg-nihongo-primary/20 border-2 border-nihongo-primary'
-                        : 'bg-pink-500/20 border-2 border-pink-500'
-                    : 'bg-nihongo-bg-light border-2 border-nihongo-border hover:border-nihongo-primary/50'
-                  }
-                  flex items-center justify-center p-2 select-none
-                `}
-                style={{
-                  perspective: '1000px',
-                }}
-              >
-                {card.isFlipped || card.isMatched ? (
-                  <div className={`text-center ${card.type === 'japanese' ? 'japanese-text' : ''}`}>
-                    <span className={`text-sm font-medium ${
-                      card.type === 'japanese' ? 'text-nihongo-primary' : 'text-pink-500'
-                    }`}>
-                      {card.content}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="text-4xl japanese-text text-nihongo-text-muted">
-                    日
-                  </div>
-                )}
-              </div>
+                card={card}
+                onCardClick={handleCardClick}
+              />
             ))}
           </div>
         </div>

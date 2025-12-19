@@ -21,8 +21,8 @@ module.exports = {
         }
       },
       fontFamily: {
-        'japanese': ['Noto Sans JP', 'sans-serif'],
-        'body': ['Inter', 'sans-serif'],
+        'japanese': ['var(--font-noto-sans-jp)', 'Noto Sans JP', 'sans-serif'],
+        'body': ['var(--font-inter)', 'Inter', 'sans-serif'],
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-in-out',

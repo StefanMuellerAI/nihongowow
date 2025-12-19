@@ -2,7 +2,7 @@ import csv
 import io
 from typing import Optional, List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -18,6 +18,9 @@ from app.schemas import (
 from app.auth import get_current_user, require_admin
 
 router = APIRouter(prefix="/api/vocabulary", tags=["Vocabulary"])
+
+# Cache duration for tags endpoint (5 minutes) - can change with vocabulary updates
+TAGS_CACHE_MAX_AGE = 300
 
 # Security limits for CSV import
 MAX_CSV_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
@@ -76,8 +79,14 @@ async def get_vocabulary(
 
 
 @router.get("/tags", response_model=List[str])
-async def get_all_tags(db: Session = Depends(get_db)):
-    """Get all unique tags from vocabulary."""
+async def get_all_tags(response: Response, db: Session = Depends(get_db)):
+    """Get all unique tags from vocabulary.
+    
+    Cached for 5 minutes as tags change infrequently.
+    """
+    # Set cache headers - cache for 5 minutes
+    response.headers["Cache-Control"] = f"public, max-age={TAGS_CACHE_MAX_AGE}"
+    
     all_tags = db.query(Vocabulary.tags).filter(Vocabulary.tags.isnot(None)).all()
     
     # Extract and deduplicate tags

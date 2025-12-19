@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, memo, forwardRef } from 'react';
 import { vocabularyAPI, scoresAPI, userPreferencesAPI, Vocabulary } from '@/lib/api';
 import { isAuthenticated } from '@/lib/auth';
 import { RotateCcw, Loader2, CheckCircle, XCircle, Play, Check } from 'lucide-react';
@@ -29,6 +29,95 @@ function shuffleArray<T>(array: T[]): T[] {
   }
   return shuffled;
 }
+
+// Memoized Left Card Component
+interface LeftCardProps {
+  card: WordCard;
+  isSelected: boolean;
+  isConnected: boolean;
+  isCorrect?: boolean;
+  gameState: GameState;
+  isJapanese: boolean;
+  onClick: (cardId: string) => void;
+}
+
+const LeftCardComponent = memo(forwardRef<HTMLDivElement, LeftCardProps>(
+  function LeftCardComponent({ card, isSelected, isConnected, isCorrect, gameState, isJapanese, onClick }, ref) {
+    const handleClick = useCallback(() => {
+      onClick(card.id);
+    }, [card.id, onClick]);
+
+    let borderColor = 'border-nihongo-border';
+    let bgColor = 'bg-nihongo-bg-light';
+    
+    if (isSelected) {
+      borderColor = 'border-nihongo-primary';
+      bgColor = 'bg-nihongo-primary/20';
+    } else if (isConnected && gameState === 'result') {
+      borderColor = isCorrect ? 'border-green-500' : 'border-red-500';
+      bgColor = isCorrect ? 'bg-green-500/20' : 'bg-red-500/20';
+    } else if (isConnected) {
+      borderColor = 'border-nihongo-primary/50';
+      bgColor = 'bg-nihongo-primary/10';
+    }
+
+    return (
+      <div
+        ref={ref}
+        onClick={handleClick}
+        className={`px-6 py-3 rounded-xl border-2 cursor-pointer transition-all
+                  ${borderColor} ${bgColor}
+                  ${gameState === 'playing' ? 'hover:border-nihongo-primary hover:bg-nihongo-primary/10' : ''}
+                  ${isJapanese ? 'japanese-text text-xl' : 'text-lg'}`}
+      >
+        {card.text}
+      </div>
+    );
+  }
+));
+
+// Memoized Right Card Component
+interface RightCardProps {
+  card: WordCard;
+  isConnected: boolean;
+  isCorrect?: boolean;
+  gameState: GameState;
+  isJapanese: boolean;
+  hasSelectedLeft: boolean;
+  onClick: (cardId: string) => void;
+}
+
+const RightCardComponent = memo(forwardRef<HTMLDivElement, RightCardProps>(
+  function RightCardComponent({ card, isConnected, isCorrect, gameState, isJapanese, hasSelectedLeft, onClick }, ref) {
+    const handleClick = useCallback(() => {
+      onClick(card.id);
+    }, [card.id, onClick]);
+
+    let borderColor = 'border-nihongo-border';
+    let bgColor = 'bg-nihongo-bg-light';
+    
+    if (isConnected && gameState === 'result') {
+      borderColor = isCorrect ? 'border-green-500' : 'border-red-500';
+      bgColor = isCorrect ? 'bg-green-500/20' : 'bg-red-500/20';
+    } else if (isConnected) {
+      borderColor = 'border-nihongo-primary/50';
+      bgColor = 'bg-nihongo-primary/10';
+    }
+
+    return (
+      <div
+        ref={ref}
+        onClick={handleClick}
+        className={`px-6 py-3 rounded-xl border-2 cursor-pointer transition-all
+                  ${borderColor} ${bgColor}
+                  ${gameState === 'playing' && hasSelectedLeft ? 'hover:border-nihongo-primary hover:bg-nihongo-primary/10' : ''}
+                  ${isJapanese ? 'japanese-text text-xl' : 'text-lg'}`}
+      >
+        {card.text}
+      </div>
+    );
+  }
+));
 
 export default function LinesGame() {
   const [gameState, setGameState] = useState<GameState>('loading');
@@ -127,44 +216,55 @@ export default function LinesGame() {
     loadVocabulary();
   };
 
-  const handleLeftClick = (cardId: string) => {
+  // Memoized click handlers
+  const handleLeftClick = useCallback((cardId: string) => {
     if (gameState !== 'playing') return;
     
     // Check if this card is already connected
-    const existingConnection = connections.find(c => c.leftId === cardId);
-    if (existingConnection) {
-      // Remove the connection
-      setConnections(prev => prev.filter(c => c.leftId !== cardId));
-      setSelectedLeft(null);
-      return;
-    }
+    setConnections(prev => {
+      const existingConnection = prev.find(c => c.leftId === cardId);
+      if (existingConnection) {
+        // Remove the connection
+        setSelectedLeft(null);
+        return prev.filter(c => c.leftId !== cardId);
+      }
+      return prev;
+    });
     
-    setSelectedLeft(cardId);
-  };
+    setSelectedLeft(current => {
+      // If clicking on already selected, toggle off
+      if (current === cardId) {
+        return null;
+      }
+      return cardId;
+    });
+  }, [gameState]);
 
-  const handleRightClick = (cardId: string) => {
+  const handleRightClick = useCallback((cardId: string) => {
     if (gameState !== 'playing' || !selectedLeft) return;
     
     // Check if this right card is already connected
-    const existingConnection = connections.find(c => c.rightId === cardId);
-    if (existingConnection) {
-      // Remove the existing connection and create new one
-      setConnections(prev => [
-        ...prev.filter(c => c.rightId !== cardId),
-        { leftId: selectedLeft, rightId: cardId }
-      ]);
-    } else {
-      // Create new connection
-      setConnections(prev => [
-        ...prev.filter(c => c.leftId !== selectedLeft),
-        { leftId: selectedLeft, rightId: cardId }
-      ]);
-    }
+    setConnections(prev => {
+      const existingConnection = prev.find(c => c.rightId === cardId);
+      if (existingConnection) {
+        // Remove the existing connection and create new one
+        return [
+          ...prev.filter(c => c.rightId !== cardId && c.leftId !== selectedLeft),
+          { leftId: selectedLeft, rightId: cardId }
+        ];
+      } else {
+        // Create new connection
+        return [
+          ...prev.filter(c => c.leftId !== selectedLeft),
+          { leftId: selectedLeft, rightId: cardId }
+        ];
+      }
+    });
     
     setSelectedLeft(null);
-  };
+  }, [gameState, selectedLeft]);
 
-  const checkAnswers = () => {
+  const checkAnswers = useCallback(() => {
     if (connections.length !== leftCards.length) return;
     
     // Check each connection
@@ -191,7 +291,7 @@ export default function LinesGame() {
         console.error('Failed to update score:', err);
       });
     }
-  };
+  }, [connections, leftCards, rightCards]);
 
   const getLineCoordinates = (leftId: string, rightId: string) => {
     const container = containerRef.current;
@@ -326,37 +426,23 @@ export default function LinesGame() {
             <div className="flex flex-col justify-around py-4 z-20">
               {leftCards.map(card => {
                 const isSelected = selectedLeft === card.id;
-                const isConnected = connections.some(c => c.leftId === card.id);
                 const connection = connections.find(c => c.leftId === card.id);
-                
-                let borderColor = 'border-nihongo-border';
-                let bgColor = 'bg-nihongo-bg-light';
-                
-                if (isSelected) {
-                  borderColor = 'border-nihongo-primary';
-                  bgColor = 'bg-nihongo-primary/20';
-                } else if (isConnected && gameState === 'result') {
-                  borderColor = connection?.correct ? 'border-green-500' : 'border-red-500';
-                  bgColor = connection?.correct ? 'bg-green-500/20' : 'bg-red-500/20';
-                } else if (isConnected) {
-                  borderColor = 'border-nihongo-primary/50';
-                  bgColor = 'bg-nihongo-primary/10';
-                }
+                const isConnected = !!connection;
                 
                 return (
-                  <div
+                  <LeftCardComponent
                     key={card.id}
                     ref={(el) => {
                       if (el) leftRefs.current.set(card.id, el);
                     }}
-                    onClick={() => handleLeftClick(card.id)}
-                    className={`px-6 py-3 rounded-xl border-2 cursor-pointer transition-all
-                              ${borderColor} ${bgColor}
-                              ${gameState === 'playing' ? 'hover:border-nihongo-primary hover:bg-nihongo-primary/10' : ''}
-                              ${isJapaneseLeft ? 'japanese-text text-xl' : 'text-lg'}`}
-                  >
-                    {card.text}
-                  </div>
+                    card={card}
+                    isSelected={isSelected}
+                    isConnected={isConnected}
+                    isCorrect={connection?.correct}
+                    gameState={gameState}
+                    isJapanese={isJapaneseLeft}
+                    onClick={handleLeftClick}
+                  />
                 );
               })}
             </div>
@@ -364,34 +450,23 @@ export default function LinesGame() {
             {/* Right Column */}
             <div className="flex flex-col justify-around py-4 z-20">
               {rightCards.map(card => {
-                const isConnected = connections.some(c => c.rightId === card.id);
                 const connection = connections.find(c => c.rightId === card.id);
-                
-                let borderColor = 'border-nihongo-border';
-                let bgColor = 'bg-nihongo-bg-light';
-                
-                if (isConnected && gameState === 'result') {
-                  borderColor = connection?.correct ? 'border-green-500' : 'border-red-500';
-                  bgColor = connection?.correct ? 'bg-green-500/20' : 'bg-red-500/20';
-                } else if (isConnected) {
-                  borderColor = 'border-nihongo-primary/50';
-                  bgColor = 'bg-nihongo-primary/10';
-                }
+                const isConnected = !!connection;
                 
                 return (
-                  <div
+                  <RightCardComponent
                     key={card.id}
                     ref={(el) => {
                       if (el) rightRefs.current.set(card.id, el);
                     }}
-                    onClick={() => handleRightClick(card.id)}
-                    className={`px-6 py-3 rounded-xl border-2 cursor-pointer transition-all
-                              ${borderColor} ${bgColor}
-                              ${gameState === 'playing' && selectedLeft ? 'hover:border-nihongo-primary hover:bg-nihongo-primary/10' : ''}
-                              ${!isJapaneseLeft ? 'japanese-text text-xl' : 'text-lg'}`}
-                  >
-                    {card.text}
-                  </div>
+                    card={card}
+                    isConnected={isConnected}
+                    isCorrect={connection?.correct}
+                    gameState={gameState}
+                    isJapanese={!isJapaneseLeft}
+                    hasSelectedLeft={!!selectedLeft}
+                    onClick={handleRightClick}
+                  />
                 );
               })}
             </div>

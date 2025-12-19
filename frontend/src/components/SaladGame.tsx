@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { kanaAPI, settingsAPI, scoresAPI, KanaItem } from '@/lib/api';
 import { isAuthenticated } from '@/lib/auth';
 import { Timer, Trophy, RotateCcw, Loader2, CheckCircle, XCircle } from 'lucide-react';
@@ -17,6 +17,60 @@ interface KanaCard extends KanaItem {
   id: string;
   matched: boolean;
 }
+
+// Memoized Romaji Card Component
+interface RomajiCardProps {
+  card: KanaCard;
+  onDragStart: (e: React.DragEvent, card: KanaCard) => void;
+}
+
+const RomajiCardComponent = memo(function RomajiCardComponent({ card, onDragStart }: RomajiCardProps) {
+  const handleDragStart = useCallback((e: React.DragEvent) => {
+    onDragStart(e, card);
+  }, [card, onDragStart]);
+
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      className="w-16 h-16 bg-nihongo-bg-light border-2 border-nihongo-border rounded-xl 
+               flex items-center justify-center cursor-grab active:cursor-grabbing
+               hover:border-nihongo-primary hover:bg-nihongo-primary/10 transition-all
+               text-lg font-medium text-nihongo-text select-none"
+    >
+      {card.romaji}
+    </div>
+  );
+});
+
+// Memoized Kana Card Component
+interface KanaCardComponentProps {
+  card: KanaCard;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent, card: KanaCard) => void;
+}
+
+const KanaCardComponent = memo(function KanaCardComponent({ card, onDragOver, onDrop }: KanaCardComponentProps) {
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    onDrop(e, card);
+  }, [card, onDrop]);
+
+  return (
+    <div
+      onDragOver={onDragOver}
+      onDrop={handleDrop}
+      title={card.matched ? undefined : card.romaji}
+      className={`w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold
+                japanese-text select-none transition-all cursor-default ${
+        card.matched
+          ? 'bg-green-500/20 border-2 border-green-500 text-green-400'
+          : 'bg-nihongo-bg-light border-2 border-nihongo-border text-nihongo-text hover:border-nihongo-primary'
+      }`}
+    >
+      {card.kana}
+    </div>
+  );
+});
 
 export default function SaladGame({ kanaType, onKanaTypeChange }: SaladGameProps) {
   const [gameState, setGameState] = useState<GameState>('loading');
@@ -133,20 +187,24 @@ export default function SaladGame({ kanaType, onKanaTypeChange }: SaladGameProps
     setGameState('playing');
   };
 
-  const handleDragStart = (e: React.DragEvent, card: KanaCard) => {
+  // Memoized drag handlers
+  const handleDragStart = useCallback((e: React.DragEvent, card: KanaCard) => {
     setDraggedCard(card);
     e.dataTransfer.effectAllowed = 'move';
-  };
+  }, []);
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-  };
+  }, []);
 
-  const handleDrop = (e: React.DragEvent, targetCard: KanaCard) => {
+  const handleDrop = useCallback((e: React.DragEvent, targetCard: KanaCard) => {
     e.preventDefault();
     
-    if (!draggedCard || targetCard.matched) return;
+    if (!draggedCard || targetCard.matched) {
+      setDraggedCard(null);
+      return;
+    }
     
     // Check if match
     if (draggedCard.romaji === targetCard.romaji) {
@@ -160,30 +218,33 @@ export default function SaladGame({ kanaType, onKanaTypeChange }: SaladGameProps
         c.romaji === targetCard.romaji ? { ...c, matched: true } : c
       ));
       
-      const newMatchedCount = matchedCount + 1;
-      setMatchedCount(newMatchedCount);
-      
-      // Check if all matched
-      if (newMatchedCount === romajiCards.length) {
-        setGameState('finished');
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
+      setMatchedCount(prev => {
+        const newMatchedCount = prev + 1;
+        
+        // Check if all matched
+        if (newMatchedCount === romajiCards.length) {
+          setGameState('finished');
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+          }
+          
+          // Update score if authenticated
+          if (isAuthenticated()) {
+            scoresAPI.update('salad', newMatchedCount).catch(err => {
+              console.error('Failed to update score:', err);
+            });
+          }
         }
         
-        // Update score if authenticated
-        if (isAuthenticated()) {
-          scoresAPI.update('salad', newMatchedCount).catch(err => {
-            console.error('Failed to update score:', err);
-          });
-        }
-      }
+        return newMatchedCount;
+      });
     } else {
       // Wrong match
       setErrors(prev => prev + 1);
     }
     
     setDraggedCard(null);
-  };
+  }, [draggedCard, romajiCards.length, successSound]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -192,6 +253,9 @@ export default function SaladGame({ kanaType, onKanaTypeChange }: SaladGameProps
   };
 
   const timeSpent = timeLimit - timeRemaining;
+
+  // Filter unmatched romaji cards for rendering
+  const unmatchedRomajiCards = romajiCards.filter(c => !c.matched);
 
   if (gameState === 'loading') {
     return (
@@ -275,18 +339,12 @@ export default function SaladGame({ kanaType, onKanaTypeChange }: SaladGameProps
             <h3 className="text-lg font-bold text-nihongo-text-muted mb-4 text-center">ROMAJI</h3>
             <div className="flex-1 overflow-y-auto">
               <div className="flex flex-wrap gap-3 justify-center content-start">
-                {romajiCards.filter(c => !c.matched).map(card => (
-                  <div
+                {unmatchedRomajiCards.map(card => (
+                  <RomajiCardComponent
                     key={card.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, card)}
-                    className="w-16 h-16 bg-nihongo-bg-light border-2 border-nihongo-border rounded-xl 
-                             flex items-center justify-center cursor-grab active:cursor-grabbing
-                             hover:border-nihongo-primary hover:bg-nihongo-primary/10 transition-all
-                             text-lg font-medium text-nihongo-text select-none"
-                  >
-                    {card.romaji}
-                  </div>
+                    card={card}
+                    onDragStart={handleDragStart}
+                  />
                 ))}
               </div>
             </div>
@@ -300,20 +358,12 @@ export default function SaladGame({ kanaType, onKanaTypeChange }: SaladGameProps
             <div className="flex-1 overflow-y-auto">
               <div className="flex flex-wrap gap-3 justify-center content-start">
                 {kanaCards.map(card => (
-                  <div
+                  <KanaCardComponent
                     key={card.id}
+                    card={card}
                     onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, card)}
-                    title={card.matched ? undefined : card.romaji}
-                    className={`w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold
-                              japanese-text select-none transition-all cursor-default ${
-                      card.matched
-                        ? 'bg-green-500/20 border-2 border-green-500 text-green-400'
-                        : 'bg-nihongo-bg-light border-2 border-nihongo-border text-nihongo-text hover:border-nihongo-primary'
-                    }`}
-                  >
-                    {card.kana}
-                  </div>
+                    onDrop={handleDrop}
+                  />
                 ))}
               </div>
             </div>
@@ -364,4 +414,3 @@ export default function SaladGame({ kanaType, onKanaTypeChange }: SaladGameProps
     </div>
   );
 }
-

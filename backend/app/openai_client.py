@@ -1,4 +1,4 @@
-from openai import OpenAI
+from openai import AsyncOpenAI
 from typing import Optional
 import io
 import logging
@@ -8,16 +8,35 @@ from app.config import get_settings
 settings = get_settings()
 logger = logging.getLogger(__name__)
 
+# Singleton async client instance
+_async_client: Optional[AsyncOpenAI] = None
 
-def get_openai_client() -> Optional[OpenAI]:
-    """Get OpenAI client if API key is configured."""
+
+def get_openai_client() -> Optional[AsyncOpenAI]:
+    """Get async OpenAI client if API key is configured.
+    
+    Returns a singleton instance to reuse connections.
+    """
+    global _async_client
+    
     if not settings.openai_api_key:
         return None
-    return OpenAI(api_key=settings.openai_api_key)
+    
+    if _async_client is None:
+        _async_client = AsyncOpenAI(
+            api_key=settings.openai_api_key,
+            timeout=30.0,  # 30 second timeout
+            max_retries=2,  # Retry failed requests up to 2 times
+        )
+    
+    return _async_client
 
 
 async def generate_hint(expression: str, reading: str, meaning: str, mode: str) -> str:
-    """Generate a learning hint for a vocabulary word using ChatGPT."""
+    """Generate a learning hint for a vocabulary word using ChatGPT.
+    
+    Uses async OpenAI client to avoid blocking the event loop.
+    """
     client = get_openai_client()
     if not client:
         return "AI hints are not available. Please configure OPENAI_API_KEY."
@@ -52,7 +71,7 @@ Do NOT reveal the exact answer. You can:
 Respond in English only."""
 
     try:
-        response = client.chat.completions.create(
+        response = await client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a concise Japanese language tutor. Keep hints short and helpful."},
@@ -63,12 +82,14 @@ Respond in English only."""
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
+        logger.error(f"Hint generation failed: {e}")
         return f"Could not generate hint: {str(e)}"
 
 
 async def generate_tts(text: str) -> Optional[bytes]:
     """Generate Japanese speech audio using OpenAI TTS.
     
+    Uses async OpenAI client to avoid blocking the event loop.
     Prefixes short Japanese words with an English intro to prevent
     audio clipping at the start of the recording.
     """
@@ -80,20 +101,19 @@ async def generate_tts(text: str) -> Optional[bytes]:
     tts_input = f"It sounds like: {text}"
     
     try:
-        response = client.audio.speech.create(
+        response = await client.audio.speech.create(
             model="tts-1",
             voice="nova",  # Good for Japanese pronunciation
             input=tts_input,
             response_format="mp3"
         )
         
-        # Read the audio content
+        # Read the audio content asynchronously
         audio_bytes = io.BytesIO()
-        for chunk in response.iter_bytes():
+        async for chunk in response.iter_bytes():
             audio_bytes.write(chunk)
         audio_bytes.seek(0)
         return audio_bytes.getvalue()
     except Exception as e:
         logger.error(f"TTS generation failed: {e}")
         return None
-

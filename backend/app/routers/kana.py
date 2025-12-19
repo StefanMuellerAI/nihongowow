@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
 from typing import Optional
 import random
@@ -8,6 +8,9 @@ from app.models import Setting
 from app.schemas import KanaListResponse, KanaItem
 
 router = APIRouter(prefix="/api/kana", tags=["Kana"])
+
+# Cache duration constants
+STATIC_CACHE_MAX_AGE = 86400  # 24 hours for static kana data
 
 # Complete Hiragana list
 HIRAGANA = [
@@ -253,8 +256,14 @@ KATAKANA = [
 
 
 @router.get("", response_model=KanaListResponse)
-async def get_all_kana():
-    """Get all hiragana and katakana characters."""
+async def get_all_kana(response: Response):
+    """Get all hiragana and katakana characters.
+    
+    This endpoint returns static data, so we cache it aggressively.
+    """
+    # Set cache headers for static data - cache for 24 hours
+    response.headers["Cache-Control"] = f"public, max-age={STATIC_CACHE_MAX_AGE}"
+    
     return KanaListResponse(
         hiragana=[KanaItem(**k) for k in HIRAGANA],
         katakana=[KanaItem(**k) for k in KATAKANA]
