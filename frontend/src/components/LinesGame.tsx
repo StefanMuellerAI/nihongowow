@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { vocabularyAPI, scoresAPI, Vocabulary } from '@/lib/api';
+import { vocabularyAPI, scoresAPI, userPreferencesAPI, Vocabulary } from '@/lib/api';
 import { isAuthenticated } from '@/lib/auth';
 import { RotateCcw, Loader2, CheckCircle, XCircle, Play, Check } from 'lucide-react';
 
@@ -38,10 +38,33 @@ export default function LinesGame() {
   const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
   const [isJapaneseLeft, setIsJapaneseLeft] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const leftRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const rightRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // Load user preferences on mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (!isAuthenticated()) {
+        setPrefsLoaded(true);
+        return;
+      }
+
+      try {
+        const preferences = await userPreferencesAPI.get();
+        setSelectedTags(preferences.selected_tags || []);
+      } catch (err) {
+        console.error('Failed to load user preferences:', err);
+      } finally {
+        setPrefsLoaded(true);
+      }
+    };
+
+    loadPreferences();
+  }, []);
 
   const loadVocabulary = useCallback(async () => {
     setGameState('loading');
@@ -50,7 +73,9 @@ export default function LinesGame() {
     setCorrectCount(0);
     
     try {
-      const vocabulary = await vocabularyAPI.getRandom(10);
+      // Pass tags to getRandom if any are selected
+      const tagsParam = selectedTags.length > 0 ? selectedTags.join(',') : undefined;
+      const vocabulary = await vocabularyAPI.getRandom(10, tagsParam);
       
       if (vocabulary.length === 0) {
         return;
@@ -85,11 +110,14 @@ export default function LinesGame() {
       console.error('Failed to load vocabulary:', err);
       setGameState('ready');
     }
-  }, []);
+  }, [selectedTags]);
 
+  // Load vocabulary after preferences are loaded
   useEffect(() => {
-    loadVocabulary();
-  }, [loadVocabulary]);
+    if (prefsLoaded) {
+      loadVocabulary();
+    }
+  }, [prefsLoaded, loadVocabulary]);
 
   const startGame = () => {
     setGameState('playing');
@@ -203,6 +231,11 @@ export default function LinesGame() {
           <span className="text-sm text-nihongo-text-muted px-3 py-1 bg-nihongo-bg-light rounded-full">
             {isJapaneseLeft ? 'Japanese → English' : 'English → Japanese'}
           </span>
+          {selectedTags.length > 0 && (
+            <span className="text-sm text-nihongo-primary px-3 py-1 bg-nihongo-primary/10 rounded-full">
+              {selectedTags.join(', ')}
+            </span>
+          )}
         </div>
         
         <div className="flex items-center gap-4">
@@ -404,4 +437,3 @@ export default function LinesGame() {
     </div>
   );
 }
-

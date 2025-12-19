@@ -95,14 +95,24 @@ async def get_all_tags(db: Session = Depends(get_db)):
 @router.get("/random", response_model=List[VocabularyResponse])
 async def get_random_vocabulary(
     count: int = Query(10, ge=1, le=50),
+    tags: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    """Get random vocabulary items for games."""
-    total = db.query(Vocabulary).count()
+    """Get random vocabulary items for games, optionally filtered by tags."""
+    query = db.query(Vocabulary)
+    
+    # Tag filter with escaped pattern
+    if tags:
+        tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+        for tag in tag_list:
+            escaped_tag = escape_like_pattern(tag)
+            query = query.filter(Vocabulary.tags.ilike(f"%{escaped_tag}%"))
+    
+    total = query.count()
     if total == 0:
         return []
     
-    items = db.query(Vocabulary).order_by(func.random()).limit(count).all()
+    items = query.order_by(func.random()).limit(count).all()
     return items
 
 

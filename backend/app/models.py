@@ -27,6 +27,7 @@ class User(Base):
     highscores = relationship("DailyHighscore", back_populates="user", cascade="all, delete-orphan")
     verification_tokens = relationship("EmailVerificationToken", back_populates="user", cascade="all, delete-orphan")
     sent_invitations = relationship("Invitation", back_populates="inviter", cascade="all, delete-orphan")
+    preferences = relationship("UserPreferences", back_populates="user", uselist=False, cascade="all, delete-orphan")
     
     def is_locked(self) -> bool:
         """Check if the account is currently locked."""
@@ -152,3 +153,17 @@ class VocabularyTTSCache(Base):
     text = Column(String(500), unique=True, nullable=False, index=True)  # The spoken text
     audio_data = Column(LargeBinary, nullable=False)  # MP3 bytes
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class UserPreferences(Base):
+    """User preferences for game settings like selected vocabulary tags."""
+    __tablename__ = "user_preferences"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    selected_tags = Column(Text, nullable=False, default="")  # Comma-separated tags or empty for all
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationship
+    user = relationship("User", back_populates="preferences")

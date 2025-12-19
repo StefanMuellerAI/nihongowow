@@ -18,7 +18,8 @@ import {
   Gamepad2,
   Users,
   UserPlus,
-  HardDrive
+  HardDrive,
+  Grid3X3
 } from 'lucide-react';
 import { isAuthenticated, removeToken, getCurrentUsername } from '@/lib/auth';
 import { authAPI } from '@/lib/api';
@@ -61,6 +62,7 @@ export default function Sidebar({ isAdmin = false, onLogout }: SidebarProps) {
     { href: '/quiz', label: 'Quiz', icon: GraduationCap },
     { href: '/salad', label: 'Salad', icon: Salad },
     { href: '/lines', label: 'Lines', icon: Link2 },
+    { href: '/memory', label: 'Memory', icon: Grid3X3 },
   ];
   
   const adminLinks = [

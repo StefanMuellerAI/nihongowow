@@ -42,3 +42,4 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_table('vocabulary_tts_cache')
     op.drop_table('vocabulary_hint_cache')
+

@@ -122,7 +122,7 @@ class RegisterResponse(BaseModel):
 
 # Highscore schemas
 class ScoreUpdate(BaseModel):
-    game_type: str = Field(..., pattern="^(quiz|salad|lines)$")
+    game_type: str = Field(..., pattern="^(quiz|salad|lines|memory)$")
     score: int = Field(..., ge=0)
 
 
@@ -141,6 +141,7 @@ class TodayScoresResponse(BaseModel):
     quiz: int = 0
     salad: int = 0
     lines: int = 0
+    memory: int = 0
 
 
 class ScoreHistoryResponse(BaseModel):
@@ -344,3 +345,15 @@ class TTSCacheListResponse(BaseModel):
 class CacheStatsResponse(BaseModel):
     hint_count: int
     tts_count: int
+
+
+# User Preferences schemas
+class UserPreferencesResponse(BaseModel):
+    selected_tags: List[str]
+
+    class Config:
+        from_attributes = True
+
+
+class UserPreferencesUpdate(BaseModel):
+    selected_tags: List[str]

@@ -19,3 +19,4 @@ export function QuizError({ error, onRetry }: QuizErrorProps) {
     </div>
   );
 }
+

@@ -139,6 +139,7 @@ export interface TodayScores {
   quiz: number;
   salad: number;
   lines: number;
+  memory: number;
 }
 
 export interface ScoreEntry {
@@ -155,7 +156,7 @@ export interface ScoreHistory {
 
 // Scores API
 export const scoresAPI = {
-  update: (gameType: 'quiz' | 'salad' | 'lines', score: number) =>
+  update: (gameType: 'quiz' | 'salad' | 'lines' | 'memory', score: number) =>
     fetchAPI<ScoreEntry>('/api/scores/update', {
       method: 'POST',
       body: JSON.stringify({ game_type: gameType, score }),
@@ -241,8 +242,13 @@ export const vocabularyAPI = {
   getTags: () =>
     fetchAPI<string[]>('/api/vocabulary/tags'),
   
-  getRandom: (count?: number) =>
-    fetchAPI<Vocabulary[]>(`/api/vocabulary/random${count ? `?count=${count}` : ''}`),
+  getRandom: (count?: number, tags?: string) => {
+    const params = new URLSearchParams();
+    if (count) params.set('count', count.toString());
+    if (tags) params.set('tags', tags);
+    const query = params.toString();
+    return fetchAPI<Vocabulary[]>(`/api/vocabulary/random${query ? `?${query}` : ''}`);
+  },
   
   importCSV: async (file: File, token?: string) => {
     const formData = new FormData();
@@ -535,5 +541,22 @@ export const adminAPI = {
   clearAllTTSCache: () =>
     fetchAPI<void>('/api/admin/cache/tts', {
       method: 'DELETE',
+    }),
+};
+
+// User Preferences types
+export interface UserPreferences {
+  selected_tags: string[];
+}
+
+// User Preferences API
+export const userPreferencesAPI = {
+  get: () =>
+    fetchAPI<UserPreferences>('/api/user/preferences'),
+  
+  update: (selectedTags: string[]) =>
+    fetchAPI<UserPreferences>('/api/user/preferences', {
+      method: 'PUT',
+      body: JSON.stringify({ selected_tags: selectedTags }),
     }),
 };

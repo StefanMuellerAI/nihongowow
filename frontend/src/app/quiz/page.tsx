@@ -1,25 +1,39 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { Quiz } from '@/components/quiz';
-import TagFilter from '@/components/TagFilter';
 import AppFooter from '@/components/AppFooter';
+import { userPreferencesAPI } from '@/lib/api';
+import { isAuthenticated } from '@/lib/auth';
 
 export default function QuizPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadUserPreferences();
+  }, []);
+
+  const loadUserPreferences = async () => {
+    if (!isAuthenticated()) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const preferences = await userPreferencesAPI.get();
+      setSelectedTags(preferences.selected_tags || []);
+    } catch (err) {
+      console.error('Failed to load user preferences:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen">
-      <div className="flex flex-col">
-        <Sidebar />
-        <div className="w-64 border-r border-nihongo-border bg-nihongo-bg-light">
-          <TagFilter
-            selectedTags={selectedTags}
-            onTagsChange={setSelectedTags}
-          />
-        </div>
-      </div>
+      <Sidebar />
       
       <div className="flex-1 flex flex-col">
         <main className="flex-1 p-8">
@@ -29,9 +43,14 @@ export default function QuizPage() {
               <p className="text-nihongo-text-muted">
                 Test your Japanese vocabulary knowledge
               </p>
+              {selectedTags.length > 0 && (
+                <p className="text-sm text-nihongo-primary mt-2">
+                  Filtering by: {selectedTags.join(', ')}
+                </p>
+              )}
             </header>
             
-            <Quiz selectedTags={selectedTags} />
+            {!isLoading && <Quiz selectedTags={selectedTags} />}
           </div>
         </main>
         <AppFooter />
@@ -39,4 +58,3 @@ export default function QuizPage() {
     </div>
   );
 }
-

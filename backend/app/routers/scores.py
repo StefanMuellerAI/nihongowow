@@ -73,6 +73,8 @@ async def get_today_scores(
             result.salad = score.score
         elif score.game_type == "lines":
             result.lines = score.score
+        elif score.game_type == "memory":
+            result.memory = score.score
     
     return result
 
@@ -107,7 +109,7 @@ async def get_best_scores(
     
     result = TodayScoresResponse()
     
-    for game_type in ["quiz", "salad", "lines"]:
+    for game_type in ["quiz", "salad", "lines", "memory"]:
         best = db.query(func.max(DailyHighscore.score)).filter(
             DailyHighscore.user_id == current_user.id,
             DailyHighscore.game_type == game_type

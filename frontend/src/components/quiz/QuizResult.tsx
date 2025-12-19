@@ -91,3 +91,4 @@ export function QuizResult({ result, question, onNext, tts }: QuizResultProps) {
     </div>
   );
 }
+

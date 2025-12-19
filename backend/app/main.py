@@ -9,7 +9,7 @@ from slowapi.errors import RateLimitExceeded
 from app.config import get_settings
 from app.database import SessionLocal
 from app.models import User, MFACode, EmailVerificationToken, Invitation
-from app.routers import auth, vocabulary, quiz, kana, scores, admin
+from app.routers import auth, vocabulary, quiz, kana, scores, admin, user_preferences
 from app.routers import settings as settings_router
 from app.rate_limiter import limiter, rate_limit_exceeded_handler
 from app.security_headers import SecurityHeadersMiddleware
@@ -121,6 +121,7 @@ app.include_router(settings_router.router)
 app.include_router(kana.router)
 app.include_router(scores.router)
 app.include_router(admin.router)
+app.include_router(user_preferences.router)
 
 
 @app.get("/")

@@ -56,3 +56,4 @@ RATE_LIMITS = {
     "tts": "30/minute",            # 30 TTS requests per minute (expensive)
     "hint": "20/minute",           # 20 AI hint requests per minute (expensive)
 }
+
