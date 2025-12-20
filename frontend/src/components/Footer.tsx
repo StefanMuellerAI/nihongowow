@@ -22,6 +22,7 @@ export default function Footer() {
           <Link href="/salad" className="hover:text-nihongo-text transition-colors">Salad</Link>
           <Link href="/lines" className="hover:text-nihongo-text transition-colors">Lines</Link>
           <span className="text-nihongo-border">|</span>
+          <Link href="/faq" className="hover:text-nihongo-text transition-colors">FAQ</Link>
           <Link href="/imprint" className="hover:text-nihongo-text transition-colors">Imprint</Link>
           <Link href="/privacy" className="hover:text-nihongo-text transition-colors">Privacy Policy</Link>
         </div>

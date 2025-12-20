@@ -60,3 +60,5 @@ async def update_preferences(
     db.refresh(prefs)
     
     return UserPreferencesResponse(selected_tags=update_data.selected_tags)
+
+

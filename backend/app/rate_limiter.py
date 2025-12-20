@@ -57,3 +57,5 @@ RATE_LIMITS = {
     "hint": "20/minute",           # 20 AI hint requests per minute (expensive)
 }
 
+
+

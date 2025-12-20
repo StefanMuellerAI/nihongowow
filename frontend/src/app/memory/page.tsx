@@ -1,20 +1,27 @@
-'use client';
+import type { Metadata } from 'next';
+import MemoryPageClient from '@/components/MemoryPageClient';
 
-import Sidebar from '@/components/Sidebar';
-import MemoryGame from '@/components/MemoryGame';
-import AppFooter from '@/components/AppFooter';
+export const metadata: Metadata = {
+  title: 'Japanese Memory Game | Learn Vocabulary Through Play',
+  description: 'Boost your Japanese vocabulary retention with our memory game. Match Japanese words and meanings while training your memory and language skills.',
+  keywords: [
+    'Japanese memory game',
+    'vocabulary memory',
+    'learn Japanese through games',
+    'Japanese word memory',
+    'language learning game',
+    'Japanese flashcard memory',
+  ],
+  alternates: {
+    canonical: '/memory',
+  },
+  openGraph: {
+    title: 'Japanese Memory Game | NihongoWOW',
+    description: 'Boost your Japanese vocabulary retention with our memory game. Learn through play!',
+    url: '/memory',
+  },
+};
 
 export default function MemoryPage() {
-  return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      
-      <div className="flex-1 flex flex-col">
-        <main className="flex-1 flex flex-col">
-          <MemoryGame />
-        </main>
-        <AppFooter />
-      </div>
-    </div>
-  );
+  return <MemoryPageClient />;
 }
