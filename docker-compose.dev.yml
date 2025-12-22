@@ -1,0 +1,14 @@
+# Development override - use with: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev  # Use development stage with hot-reload
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NODE_ENV: development
+

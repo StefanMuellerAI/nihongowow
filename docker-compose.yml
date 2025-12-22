@@ -60,9 +60,7 @@ services:
       - "3000:3000"
     depends_on:
       - backend
-    volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
+    # NOTE: No volumes in production! Source mounts break standalone builds.
 
 volumes:
   postgres_data:
